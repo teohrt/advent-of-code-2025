@@ -3,6 +3,7 @@ package solution
 import (
 	"log"
 	"solution/pkg/lineiterator"
+	"strconv"
 )
 
 func Solve(filePath string) int {
@@ -12,10 +13,30 @@ func Solve(filePath string) int {
 	}
 	defer iterator.Close()
 
-	count := 0
+	result := 0
+	dialPosition := 50
+
 	for iterator.Next() {
-		count++
+		line := iterator.Line()
+		direction := line[0]
+		distance, err := strconv.Atoi(line[1:])
+		if err != nil {
+			log.Fatal(err)
+		}
+		switch direction {
+		case 'L':
+			dialPosition -= distance
+		case 'R':
+			dialPosition += distance
+		default:
+			log.Fatalf("invalid direction: %s", string(direction))
+		}
+
+		dialPosition = dialPosition % 100
+		if dialPosition == 0 {
+			result++
+		}
 	}
 
-	return count
+	return result
 }
