@@ -2,12 +2,12 @@ package solution
 
 import (
 	"log"
-	"solution/pkg/lineiterator"
+	"solution/pkg/lineIterator"
 	"strconv"
 )
 
 func Solve(filePath string) int {
-	iterator, err := lineiterator.NewLineIterator(filePath)
+	iterator, err := lineIterator.NewLineIterator(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}

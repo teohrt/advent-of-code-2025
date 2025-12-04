@@ -1,4 +1,4 @@
-package lineiterator
+package lineIterator
 
 import (
 	"bufio"
