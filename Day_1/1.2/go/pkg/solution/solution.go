@@ -1,7 +1,6 @@
 package solution
 
 import (
-	"fmt"
 	"log"
 	"math"
 	"solution/pkg/lineIterator"
@@ -9,6 +8,13 @@ import (
 )
 
 func mod(a, b int) int {
+	// This is a custom modulo function that handles negative numbers differently than the built-in modulo operator.
+	// The built-in modulo operator returns a negative remainder if the dividend is negative,
+	// while this function returns a positive remainder.
+	// This is useful because we need to handle negative numbers when calculating the dial position.
+	// For example, if the dial position is -1, we need to wrap it around to the other side of the dial.
+	// If we use the built-in modulo operator, we would get -1, which is not what we want.
+	// By using this custom modulo function, we can get the correct remainder.
 	remainder := a % b
 	if remainder < 0 {
 		remainder += b
@@ -16,22 +22,19 @@ func mod(a, b int) int {
 	return remainder
 }
 
-func Solve(filePath string) (int, int, int) {
+func Solve(filePath string) (int, int) {
 	iterator, err := lineIterator.NewLineIterator(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer iterator.Close()
 
-	count := 0
 	endsAtZero := 0
 	zeros := 0
 
 	dialPosition := 50
 
 	for iterator.Next() {
-		count++
-
 		line := iterator.Line()
 		direction := line[0]
 		distance, err := strconv.Atoi(line[1:])
@@ -56,9 +59,7 @@ func Solve(filePath string) (int, int, int) {
 
 		// solution 2
 		// Full 360 degree rotations always pass 0
-		totalDistance := math.Abs(float64(distance) + float64(dialPosition))
-		fullRotations := int(math.Floor(totalDistance / 100))
-		fmt.Printf("fullRotations: %d\n", fullRotations)
+		fullRotations := int(math.Floor(float64(distance) / 100))
 		zeros += fullRotations
 
 		// If we start at 0, we can only pass 0 by a full rotation, not a partial one
@@ -72,8 +73,7 @@ func Solve(filePath string) (int, int, int) {
 		}
 
 		dialPosition = nextDialPosition
-		fmt.Printf("dialPosition: %d\n", dialPosition)
 	}
 
-	return count, endsAtZero, zeros
+	return endsAtZero, zeros
 }
