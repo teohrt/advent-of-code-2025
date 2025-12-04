@@ -2,6 +2,7 @@ package solution
 
 import (
 	"log"
+	"math"
 	"solution/pkg/lineIterator"
 	"strconv"
 )
@@ -23,19 +24,32 @@ func Solve(filePath string) int {
 		if err != nil {
 			log.Fatal(err)
 		}
+		nextDialPosition := dialPosition
 		switch direction {
 		case 'L':
-			dialPosition -= distance
+			nextDialPosition -= distance
 		case 'R':
-			dialPosition += distance
+			nextDialPosition += distance
 		default:
 			log.Fatalf("invalid direction: %s", string(direction))
 		}
+		nextDialPosition = nextDialPosition % 100
 
-		dialPosition = dialPosition % 100
-		if dialPosition == 0 {
-			result++
+		// Full 360 degree rotations always pass 0
+		fullRotations := math.Floor(float64(distance) / 100)
+		result += int(fullRotations)
+
+		// If we start at 0, we can only pass 0 by a full rotation, not a partial one
+		if dialPosition != 0 {
+			wentToZero := nextDialPosition == 0
+			rightPastZero := direction == 'R' && nextDialPosition < dialPosition
+			leftPastZero := direction == 'L' && nextDialPosition > dialPosition
+			if wentToZero || rightPastZero || leftPastZero {
+				result++
+			}
 		}
+
+		dialPosition = nextDialPosition
 	}
 
 	return result
