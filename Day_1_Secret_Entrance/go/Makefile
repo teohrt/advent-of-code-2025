@@ -5,7 +5,7 @@ build:
 	go build -o $(SOLUTION_BIN_PATH) cmd/solution/main.go
 
 run: build
-	./$(SOLUTION_BIN_PATH)
+	./$(SOLUTION_BIN_PATH) ../input.txt
 
 clean:
 	rm -rf $(BIN_DIR)/*
