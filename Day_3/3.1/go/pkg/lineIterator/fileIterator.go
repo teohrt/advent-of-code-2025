@@ -1,10 +1,7 @@
-// Package lineIterator provides a streaming iterator for comma-separated values
-// in a single line file. It reads the file character-by-character without loading
-// the entire line into memory, making it memory-efficient for very long lines.
-//
-// The iterator reads only the first line from the file and splits it by commas,
-// yielding each comma-separated value one at a time. Only the current value is
-// kept in memory, not the entire line.
+// Package lineIterator provides an iterator for reading lines from a file.
+// It reads the file line-by-line, yielding each line one at a time.
+// This approach is memory-efficient as it only keeps one line in memory at a time,
+// rather than loading the entire file.
 //
 // Example usage:
 //
@@ -15,23 +12,21 @@
 //	defer iterator.Close()
 //
 //	for iterator.Next() {
-//		value := iterator.Line()
-//		// Process value...
+//		line := iterator.Line()
+//		// Process line...
 //	}
 package lineIterator
 
 import (
 	"bufio"
-	"io"
 	"os"
 )
 
 type LineIterator struct {
-	reader      *bufio.Reader
-	file        *os.File
-	currentLine string
-	err         error
-	done        bool
+	scanner *bufio.Scanner
+	file    *os.File
+	line    string
+	err     error
 }
 
 func NewLineIterator(path string) (*LineIterator, error) {
@@ -40,72 +35,31 @@ func NewLineIterator(path string) (*LineIterator, error) {
 		return nil, err
 	}
 
-	reader := bufio.NewReader(f)
+	sc := bufio.NewScanner(f)
 
 	return &LineIterator{
-		reader: reader,
-		file:   f,
-		done:   false,
+		scanner: sc,
+		file:    f,
 	}, nil
 }
 
 func (it *LineIterator) Next() bool {
-	if it.err != nil || it.done {
+	if it.err != nil {
 		return false
 	}
 
-	// Build up the current value character by character until we hit a comma or newline
-	var currentValue []byte
-
-	for {
-		b, err := it.reader.ReadByte()
-		if err == io.EOF {
-			// If we have a value, return it (last value in the line)
-			if len(currentValue) > 0 {
-				it.currentLine = string(currentValue)
-				it.done = true
-				return true
-			}
-			it.done = true
-			return false
-		}
-		if err != nil {
-			it.err = err
-			return false
-		}
-
-		// Stop at comma or newline
-		if b == ',' {
-			// Hit a comma - return the current value
-			it.currentLine = string(currentValue)
-			return true
-		}
-
-		if b == '\n' || b == '\r' {
-			// If we hit a newline, we're done with the first line
-			// Handle \r\n by peeking ahead and consuming the \n if present
-			if b == '\r' {
-				nextByte, err := it.reader.Peek(1)
-				if err == nil && len(nextByte) > 0 && nextByte[0] == '\n' {
-					it.reader.ReadByte() // Consume the \n
-				}
-			}
-			it.done = true
-			// If we have a value before the newline, return it
-			if len(currentValue) > 0 {
-				it.currentLine = string(currentValue)
-				return true
-			}
-			return false
-		}
-
-		// Append to current value
-		currentValue = append(currentValue, b)
+	ok := it.scanner.Scan()
+	if !ok {
+		it.err = it.scanner.Err()
+		return false
 	}
+
+	it.line = it.scanner.Text()
+	return true
 }
 
 func (it *LineIterator) Line() string {
-	return it.currentLine
+	return it.line
 }
 
 func (it *LineIterator) Close() error {
