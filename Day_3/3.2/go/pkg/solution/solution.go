@@ -17,8 +17,8 @@ func Solve(filePath string) int {
 	result := 0
 	const SIZE_OF_NUMBER = 12
 
-	lastIndex := -1
 	for iterator.Next() {
+		lastIndex := -1
 		indices := []int{}
 		line := iterator.Line()
 		for i := SIZE_OF_NUMBER - 1; i >= 0; i-- {
