@@ -3,7 +3,7 @@ package solution
 import (
 	"log"
 	"solution/pkg/lineIterator"
-	"strconv"
+	"strings"
 )
 
 func Solve(filePath string) int {
@@ -13,43 +13,70 @@ func Solve(filePath string) int {
 	}
 	defer iterator.Close()
 
+	var grid [][]string
+	for iterator.Next() {
+		line := iterator.Line()
+		grid = append(grid, strings.Split(line, ""))
+	}
+
 	result := 0
 
-	for iterator.Next() {
-		largestLeft := 0
-		leftIndex := 0
-		largestRight := 0
-		line := iterator.Line()
-
-		// find largest left digit
-		// exclude the last character - the  last character can only be the right digit
-		for i := 0; i < len(line)-1; i++ {
-			digit := line[i]
-			digitInt, err := strconv.Atoi(string(digit))
-			if err != nil {
-				log.Fatal(err)
-			}
-			if digitInt > largestLeft {
-				largestLeft = digitInt
-				leftIndex = i
+	for y := 0; y < len(grid); y++ {
+		for x := 0; x < len(grid[y]); x++ {
+			if grid[y][x] == "@" && canAccess(grid, x, y) {
+				result++
 			}
 		}
-
-		// find largest right digit
-		for i := leftIndex + 1; i < len(line); i++ {
-			digit := line[i]
-			digitInt, err := strconv.Atoi(string(digit))
-			if err != nil {
-				log.Fatal(err)
-			}
-			if digitInt > largestRight {
-				largestRight = digitInt
-			}
-		}
-
-		// avoids string conversions
-		result += (largestLeft * 10) + largestRight
 	}
 
 	return result
+}
+
+func canAccess(grid [][]string, x int, y int) bool {
+	X := len(grid[0])
+	Y := len(grid)
+
+	totalNeighbors := 0
+
+	// top left
+	if x > 0 && y > 0 && grid[y-1][x-1] == "@" {
+		totalNeighbors++
+	}
+
+	// top middle
+	if y > 0 && grid[y-1][x] == "@" {
+		totalNeighbors++
+	}
+
+	// top right
+	if x < X-1 && y > 0 && grid[y-1][x+1] == "@" {
+		totalNeighbors++
+	}
+
+	// left
+	if x > 0 && grid[y][x-1] == "@" {
+		totalNeighbors++
+	}
+
+	// right
+	if x < X-1 && grid[y][x+1] == "@" {
+		totalNeighbors++
+	}
+
+	// bottom left
+	if x > 0 && y < Y-1 && grid[y+1][x-1] == "@" {
+		totalNeighbors++
+	}
+
+	// bottom middle
+	if y < Y-1 && grid[y+1][x] == "@" {
+		totalNeighbors++
+	}
+
+	// bottom right
+	if x < X-1 && y < Y-1 && grid[y+1][x+1] == "@" {
+		totalNeighbors++
+	}
+
+	return totalNeighbors < 4
 }
