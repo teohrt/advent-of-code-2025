@@ -1,3 +1,20 @@
+// Package lineIterator provides an iterator for reading lines from a file.
+// It reads the file line-by-line, yielding each line one at a time.
+// This approach is memory-efficient as it only keeps one line in memory at a time,
+// rather than loading the entire file.
+//
+// Example usage:
+//
+//	iterator, err := lineIterator.NewLineIterator("input.txt")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	defer iterator.Close()
+//
+//	for iterator.Next() {
+//		line := iterator.Line()
+//		// Process line...
+//	}
 package lineIterator
 
 import (
