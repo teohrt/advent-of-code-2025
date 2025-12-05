@@ -41,18 +41,10 @@ func Solve(filePath string) int {
 	mergedIntervals := mergeOverlappingIntervals(initialIntervals)
 
 	result := 0
-	// parse the ids and binary search to see if they are in any of the merged intervals
-	for iterator.Next() {
-		line := iterator.Line()
-		id, err := strconv.Atoi(line)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if isInInterval(mergedIntervals, id) {
-			result++
-		}
+	for _, interval := range mergedIntervals {
+		count := interval[1] - interval[0] + 1
+		result += count
 	}
-
 	return result
 }
 
