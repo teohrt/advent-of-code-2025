@@ -21,14 +21,20 @@ func Solve(filePath string) int {
 
 	result := 0
 
-	for y := 0; y < len(grid); y++ {
-		for x := 0; x < len(grid[y]); x++ {
-			if grid[y][x] == "@" && canAccess(grid, x, y) {
-				result++
+	changesMade := true
+	for changesMade {
+		count := 0
+		for y := 0; y < len(grid); y++ {
+			for x := 0; x < len(grid[y]); x++ {
+				if grid[y][x] == "@" && canAccess(grid, x, y) {
+					count++
+					grid[y][x] = "x"
+				}
 			}
 		}
+		changesMade = count > 0
+		result += count
 	}
-
 	return result
 }
 
