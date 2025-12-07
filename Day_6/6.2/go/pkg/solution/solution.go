@@ -17,39 +17,77 @@ func Solve(filePath string) int {
 	var grid [][]string
 	for iterator.Next() {
 		line := iterator.Line()
-		elements := strings.Fields(line)
-		grid = append(grid, elements)
+		grid = append(grid, strings.Split(line, ""))
 	}
-
-	totals := []int{}
-
-	for x := 0; x < len(grid[0]); x++ {
-		operator := grid[len(grid)-1][x] // the operator is the last row of the grid
-
+	result := 0
+	operatorAndColumnRanges := getOperatorAndColumnRanges(grid)
+	for _, operatorAndColumnRange := range operatorAndColumnRanges {
+		op, start, end := operatorAndColumnRange.operator, operatorAndColumnRange.startColumn, operatorAndColumnRange.endColumn
 		var total int
-		if operator == "+" {
+		if op == "+" {
 			total = 0
 		} else {
 			total = 1
 		}
-
-		for y := 0; y < len(grid)-1; y++ {
-			number, err := strconv.Atoi(grid[y][x])
-			if err != nil {
-				log.Fatal(err)
-			}
-			if operator == "+" {
+		for i := end; i >= start; i-- {
+			number := getNumberFromGrid(grid, i)
+			if op == "+" {
 				total += number
 			} else {
 				total *= number
 			}
 		}
-		totals = append(totals, total)
+		result += total
 	}
 
+	return result
+}
+
+type OperatorAndColumnRange struct {
+	operator    string
+	startColumn int
+	endColumn   int
+}
+
+func getOperatorAndColumnRanges(grid [][]string) []OperatorAndColumnRange {
+	operatorAndColumnRanges := []OperatorAndColumnRange{}
+	i := 1
+	Y := len(grid)
+	X := len(grid[Y-1])
+	last := OperatorAndColumnRange{
+		operator:    grid[Y-1][0],
+		startColumn: 0,
+	}
+	for i < X {
+		value := grid[Y-1][i]
+		if value != " " {
+			last.endColumn = i - 2 // -2 because we want to exclude the operator and the space after it
+			operatorAndColumnRanges = append(operatorAndColumnRanges, last)
+			last = OperatorAndColumnRange{
+				operator:    value,
+				startColumn: i,
+			}
+		}
+		i++
+	}
+	last.endColumn = i - 1 // no space to exclude since it's the last column
+	operatorAndColumnRanges = append(operatorAndColumnRanges, last)
+	return operatorAndColumnRanges
+}
+
+func getNumberFromGrid(grid [][]string, column int) int {
 	result := 0
-	for _, total := range totals {
-		result += total
+	multiplier := 1
+	for i := len(grid) - 2; i >= 0; i-- {
+		number := grid[i][column]
+		if number != " " {
+			numberInt, err := strconv.Atoi(number)
+			if err != nil {
+				log.Fatal(err)
+			}
+			result += numberInt * multiplier
+			multiplier *= 10
+		}
 	}
 	return result
 }
