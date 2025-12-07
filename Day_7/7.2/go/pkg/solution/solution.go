@@ -20,24 +20,19 @@ func Solve(filePath string) int {
 	}
 
 	sourceIndex := len(grid[0]) / 2
+	count := traverse(grid, sourceIndex, 2) + 1
+	return count
+}
 
-	splits := make(map[int]struct{}) // need to use a set to avoid duplicates
-	splits[sourceIndex] = struct{}{}
-
-	splitCount := 0
-	currentRow := 2
-	for currentRow < len(grid) {
-		for idx := range splits {
-			value := grid[currentRow][idx]
-			if value == "^" {
-				delete(splits, idx)
-				splits[idx+1] = struct{}{}
-				splits[idx-1] = struct{}{}
-				splitCount += 1
-			}
+func traverse(grid [][]string, x int, y int) int {
+	depth := y
+	for depth < len(grid) {
+		if grid[depth][x] == "^" {
+			left := traverse(grid, x-1, depth)
+			right := traverse(grid, x+1, depth)
+			return left + right + 1
 		}
-		currentRow += 2 // skip the next row
+		depth++
 	}
-
-	return splitCount
+	return 0
 }
