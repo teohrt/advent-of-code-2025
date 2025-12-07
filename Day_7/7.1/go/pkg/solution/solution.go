@@ -21,23 +21,22 @@ func Solve(filePath string) int {
 
 	sourceIndex := len(grid[0]) / 2
 
-	splits := make(map[int]struct{})
+	splits := make(map[int]struct{}) // need to use a set to avoid duplicates
 	splits[sourceIndex] = struct{}{}
 
 	splitCount := 0
 	currentRow := 2
 	for currentRow < len(grid) {
-		nextSplits := make(map[int]struct{})
 		for idx := range splits {
 			value := grid[currentRow][idx]
 			if value == "^" {
-				nextSplits[idx+1] = struct{}{}
-				nextSplits[idx-1] = struct{}{}
+				delete(splits, idx)
+				splits[idx+1] = struct{}{}
+				splits[idx-1] = struct{}{}
 				splitCount += 1
 			}
 		}
 		currentRow += 2 // skip the next row
-		splits = nextSplits
 	}
 
 	return splitCount
