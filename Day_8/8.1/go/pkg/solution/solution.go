@@ -1,10 +1,18 @@
 package solution
 
 import (
+	"fmt"
 	"log"
 	"solution/pkg/lineIterator"
+	"strconv"
 	"strings"
 )
+
+type Coordinate struct {
+	x int
+	y int
+	z int
+}
 
 func Solve(filePath string) int {
 	iterator, err := lineIterator.NewLineIterator(filePath)
@@ -13,31 +21,34 @@ func Solve(filePath string) int {
 	}
 	defer iterator.Close()
 
-	var grid [][]string
+	var coords []Coordinate
 	for iterator.Next() {
 		line := iterator.Line()
-		grid = append(grid, strings.Split(line, ""))
-	}
-
-	sourceIndex := len(grid[0]) / 2
-
-	splits := make(map[int]struct{}) // need to use a set to avoid duplicates
-	splits[sourceIndex] = struct{}{}
-
-	splitCount := 0
-	currentRow := 2
-	for currentRow < len(grid) {
-		for idx := range splits {
-			value := grid[currentRow][idx]
-			if value == "^" {
-				delete(splits, idx)
-				splits[idx+1] = struct{}{}
-				splits[idx-1] = struct{}{}
-				splitCount += 1
-			}
+		rawValues := strings.Split(line, ",")
+		x, err := strconv.Atoi(rawValues[0])
+		if err != nil {
+			log.Fatal(err)
 		}
-		currentRow += 2 // skip the next row
+		y, err := strconv.Atoi(rawValues[1])
+		if err != nil {
+			log.Fatal(err)
+		}
+		z, err := strconv.Atoi(rawValues[2])
+		if err != nil {
+			log.Fatal(err)
+		}
+		coordinate := Coordinate{
+			x: x,
+			y: y,
+			z: z,
+		}
+		coords = append(coords, coordinate)
 	}
 
-	return splitCount
+	result := 0
+	for _, coord := range coords {
+		fmt.Printf("coord: %+v\n", coord)
+	}
+
+	return result
 }
