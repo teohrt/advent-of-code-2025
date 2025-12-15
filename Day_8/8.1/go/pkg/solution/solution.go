@@ -1,10 +1,10 @@
 package solution
 
 import (
-	"fmt"
 	"log"
 	"math"
 	"solution/pkg/lineIterator"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -46,13 +46,56 @@ func Solve(filePath string) int {
 		coords = append(coords, coordinate)
 	}
 
-	result := 0
+	coordsTocircuits := make(map[Coordinate]*[]Coordinate)
 
-	c1 := coords[0]
-	c2 := coords[1]
-	fmt.Printf("c1: %+v\n", c1)
-	fmt.Printf("c2: %+v\n", c2)
-	fmt.Printf("distance: %f\n", getDistance(c1, c2))
+	for i := 0; i < len(coords); i++ {
+		ci := coords[i]
+		closestDistance := math.MaxFloat64
+		closestIdx := -1
+		for j := i + 1; j < len(coords); j++ {
+			cj := coords[j]
+			distance := getDistance(ci, cj)
+			if distance < closestDistance {
+				closestDistance = distance
+				closestIdx = j
+			}
+		}
+		cj := coords[closestIdx]
+
+		// join the two circuits
+		var newSharedSlice []Coordinate
+		if coordsTocircuits[ci] != nil {
+			newSharedSlice = append(newSharedSlice, *coordsTocircuits[ci]...)
+		} else {
+			newSharedSlice = append(newSharedSlice, ci)
+		}
+		if coordsTocircuits[cj] != nil {
+			newSharedSlice = append(newSharedSlice, *coordsTocircuits[cj]...)
+		} else {
+			newSharedSlice = append(newSharedSlice, cj)
+		}
+		coordsTocircuits[ci] = &newSharedSlice
+		coordsTocircuits[cj] = &newSharedSlice
+	}
+
+	seen := make(map[*[]Coordinate]struct{})
+	for _, circuit := range coordsTocircuits {
+		if _, ok := seen[circuit]; !ok {
+			seen[circuit] = struct{}{}
+		}
+	}
+
+	var circuits [][]Coordinate
+	for circuit := range seen {
+		circuits = append(circuits, *circuit)
+	}
+
+	sort.Slice(circuits, func(i, j int) bool {
+		return len(circuits[i]) > len(circuits[j])
+	})
+
+	result := 0
+	// result = len(circuits[0]) * len(circuits[1]) * len(circuits[2])
 
 	return result
 }
