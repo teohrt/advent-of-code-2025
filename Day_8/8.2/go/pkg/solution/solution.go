@@ -1,7 +1,6 @@
 package solution
 
 import (
-	"fmt"
 	"log"
 	"math"
 	"solution/pkg/lineIterator"
@@ -9,8 +8,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-const CONNECTION_COUNT = 1000
 
 type Coordinate struct {
 	x int
@@ -65,11 +62,11 @@ func Solve(filePath string) int {
 		return getDistance(coordinateCombinations[i][0], coordinateCombinations[i][1]) < getDistance(coordinateCombinations[j][0], coordinateCombinations[j][1])
 	})
 
+	lastComboMerged := []Coordinate{}
+
 	// generate circuits using the first CONNECTION_COUNT coordinate combinations
 	coordsTocircuits := make(map[Coordinate]*map[Coordinate]struct{})
-	sliced := coordinateCombinations[:CONNECTION_COUNT]
-	fmt.Printf("sliced: %d\n", len(sliced))
-	for _, combination := range coordinateCombinations[:CONNECTION_COUNT] {
+	for _, combination := range coordinateCombinations {
 		c1 := combination[0]
 		c2 := combination[1]
 		_, c1Exists := coordsTocircuits[c1]
@@ -80,16 +77,19 @@ func Solve(filePath string) int {
 			sharedSet[c2] = struct{}{}
 			coordsTocircuits[c1] = &sharedSet
 			coordsTocircuits[c2] = &sharedSet
+			lastComboMerged = []Coordinate{c1, c2}
 		} else if c1Exists && !c2Exists {
 			// base the shared set on the prexisting set for c1 and add c2
 			sharedSet := coordsTocircuits[c1]
 			(*sharedSet)[c2] = struct{}{}
 			coordsTocircuits[c2] = sharedSet
+			lastComboMerged = []Coordinate{c1, c2}
 		} else if !c1Exists && c2Exists {
 			// base the shared set on the prexisting set for c2 and add c1
 			sharedSet := coordsTocircuits[c2]
 			(*sharedSet)[c1] = struct{}{}
 			coordsTocircuits[c1] = sharedSet
+			lastComboMerged = []Coordinate{c1, c2}
 		} else {
 			// merge the two pre-existing sets
 			oldSet1 := coordsTocircuits[c1]
@@ -107,37 +107,13 @@ func Solve(filePath string) int {
 						coordsTocircuits[coord] = oldSet1
 					}
 				}
+				lastComboMerged = []Coordinate{c1, c2}
 			}
 			// if oldSet1 == oldSet2, they're already the same, nothing to do
 		}
 	}
 
-	// initialize circuit list and sort by list length
-	seen := make(map[*map[Coordinate]struct{}]struct{})
-	for _, circuit := range coordsTocircuits {
-		if _, ok := seen[circuit]; !ok {
-			seen[circuit] = struct{}{}
-		}
-	}
-	circuits := [][]Coordinate{}
-	for circuit := range seen {
-		circuitSlice := []Coordinate{}
-		for coord := range *circuit {
-			circuitSlice = append(circuitSlice, coord)
-		}
-		circuits = append(circuits, circuitSlice)
-	}
-	sort.Slice(circuits, func(i, j int) bool {
-		return len(circuits[i]) > len(circuits[j])
-	})
-
-	// multiply the sizes of the three largest circuits
-	result := 1
-	for _, circuit := range circuits[:3] {
-		result *= len(circuit)
-	}
-
-	return result
+	return lastComboMerged[0].x * lastComboMerged[1].x
 }
 
 // d = sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)
