@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-const CONNECTION_COUNT = 10
+const CONNECTION_COUNT = 1000
 
 type Coordinate struct {
 	x int
@@ -92,15 +92,23 @@ func Solve(filePath string) int {
 			coordsTocircuits[c1] = sharedSet
 		} else {
 			// merge the two pre-existing sets
-			newSharedSet := make(map[Coordinate]struct{})
-			for coord := range *coordsTocircuits[c1] {
-				newSharedSet[coord] = struct{}{}
+			oldSet1 := coordsTocircuits[c1]
+			oldSet2 := coordsTocircuits[c2]
+			// reuse oldSet1's pointer, update the map it points to by adding coordinates from oldSet2
+			if oldSet1 != oldSet2 {
+				// add all coordinates from oldSet2 to the map that oldSet1 points to
+				for coord := range *oldSet2 {
+					(*oldSet1)[coord] = struct{}{}
+				}
+				// update all coordinates that reference oldSet2 to point to oldSet1 instead
+				// this is disgusting, but I can't think of a better way to redirect the pointers right now
+				for coord, setPtr := range coordsTocircuits {
+					if setPtr == oldSet2 {
+						coordsTocircuits[coord] = oldSet1
+					}
+				}
 			}
-			for coord := range *coordsTocircuits[c2] {
-				newSharedSet[coord] = struct{}{}
-			}
-			*coordsTocircuits[c1] = newSharedSet
-			*coordsTocircuits[c2] = newSharedSet
+			// if oldSet1 == oldSet2, they're already the same, nothing to do
 		}
 	}
 
@@ -123,14 +131,13 @@ func Solve(filePath string) int {
 		return len(circuits[i]) > len(circuits[j])
 	})
 
-	fmt.Printf("number of circuits: %d\n", len(circuits))
-	fmt.Println("Expecting: 11")
-
-	for _, circuit := range circuits {
-		fmt.Println(circuit)
+	// multiply the sizes of the three largest circuits
+	result := 1
+	for _, circuit := range circuits[:3] {
+		result *= len(circuit)
 	}
 
-	return 0
+	return result
 }
 
 // d = sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)
