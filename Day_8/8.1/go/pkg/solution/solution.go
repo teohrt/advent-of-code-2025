@@ -1,6 +1,7 @@
 package solution
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"solution/pkg/lineIterator"
@@ -52,15 +53,22 @@ func Solve(filePath string) int {
 		ci := coords[i]
 		closestDistance := math.MaxFloat64
 		closestIdx := -1
-		for j := i + 1; j < len(coords); j++ {
+		for j := 0; j < len(coords); j++ {
+			if j == i {
+				continue
+			}
 			cj := coords[j]
 			distance := getDistance(ci, cj)
-			if distance < closestDistance {
-				closestDistance = distance
+			if math.Abs(distance) < closestDistance {
+				closestDistance = math.Abs(distance)
 				closestIdx = j
 			}
 		}
 		cj := coords[closestIdx]
+
+		fmt.Printf("distance: %f\n", closestDistance)
+		fmt.Printf("ci: %v\n", ci)
+		fmt.Printf("cj: %v\n", cj)
 
 		// join the two circuits
 		var newSharedSlice []Coordinate
@@ -74,6 +82,7 @@ func Solve(filePath string) int {
 		} else {
 			newSharedSlice = append(newSharedSlice, cj)
 		}
+		fmt.Printf("newSharedSlice: %v\n", newSharedSlice)
 		coordsTocircuits[ci] = &newSharedSlice
 		coordsTocircuits[cj] = &newSharedSlice
 	}
@@ -93,9 +102,12 @@ func Solve(filePath string) int {
 	sort.Slice(circuits, func(i, j int) bool {
 		return len(circuits[i]) > len(circuits[j])
 	})
+	for _, circuit := range circuits {
+		fmt.Println(len(circuit))
+	}
 
 	result := 0
-	// result = len(circuits[0]) * len(circuits[1]) * len(circuits[2])
+	result = len(circuits[0]) * len(circuits[1]) * len(circuits[2])
 
 	return result
 }
