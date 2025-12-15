@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+const CONNECTION_COUNT = 10
+
 type Coordinate struct {
 	x int
 	y int
@@ -47,76 +49,88 @@ func Solve(filePath string) int {
 		coords = append(coords, coordinate)
 	}
 
-	coordsTocircuits := make(map[Coordinate]*map[Coordinate]struct{})
-
+	// generate all coordinate combinations
+	coordinateCombinations := [][]Coordinate{}
 	for i := 0; i < len(coords); i++ {
-		ci := coords[i]
-		closestDistance := math.MaxFloat64
-		closestIdx := -1
-		for j := 0; j < len(coords); j++ {
-			if j == i {
+		for j := i + 1; j < len(coords); j++ {
+			if i == j {
 				continue
 			}
-			cj := coords[j]
-			distance := getDistance(ci, cj)
-			if math.Abs(distance) < closestDistance {
-				closestDistance = math.Abs(distance)
-				closestIdx = j
-			}
+			coordinateCombinations = append(coordinateCombinations, []Coordinate{coords[i], coords[j]})
 		}
-		cj := coords[closestIdx]
-
-		fmt.Printf("ci: %v\n", ci)
-		fmt.Printf("cj: %v\n", cj)
-
-		// join the two circuits
-		newSharedSet := make(map[Coordinate]struct{})
-		if coordsTocircuits[ci] != nil {
-			for coord := range *coordsTocircuits[ci] {
-				newSharedSet[coord] = struct{}{}
-			}
-		} else {
-			newSharedSet[ci] = struct{}{}
-		}
-		if coordsTocircuits[cj] != nil {
-			for coord := range *coordsTocircuits[cj] {
-				newSharedSet[coord] = struct{}{}
-			}
-		} else {
-			newSharedSet[cj] = struct{}{}
-		}
-		fmt.Printf("newSharedSet: %v\n", newSharedSet)
-		coordsTocircuits[ci] = &newSharedSet
-		coordsTocircuits[cj] = &newSharedSet
 	}
 
+	// sort the coordinate combinations by distance
+	sort.Slice(coordinateCombinations, func(i, j int) bool {
+		return getDistance(coordinateCombinations[i][0], coordinateCombinations[i][1]) < getDistance(coordinateCombinations[j][0], coordinateCombinations[j][1])
+	})
+
+	// generate circuits using the first CONNECTION_COUNT coordinate combinations
+	coordsTocircuits := make(map[Coordinate]*map[Coordinate]struct{})
+	sliced := coordinateCombinations[:CONNECTION_COUNT]
+	fmt.Printf("sliced: %d\n", len(sliced))
+	for _, combination := range coordinateCombinations[:CONNECTION_COUNT] {
+		c1 := combination[0]
+		c2 := combination[1]
+		_, c1Exists := coordsTocircuits[c1]
+		_, c2Exists := coordsTocircuits[c2]
+		sharedSet := make(map[Coordinate]struct{})
+		if !c1Exists && !c2Exists {
+			sharedSet[c1] = struct{}{}
+			sharedSet[c2] = struct{}{}
+			coordsTocircuits[c1] = &sharedSet
+			coordsTocircuits[c2] = &sharedSet
+		} else if c1Exists && !c2Exists {
+			// base the shared set on the prexisting set for c1 and add c2
+			sharedSet := coordsTocircuits[c1]
+			(*sharedSet)[c2] = struct{}{}
+			coordsTocircuits[c2] = sharedSet
+		} else if !c1Exists && c2Exists {
+			// base the shared set on the prexisting set for c2 and add c1
+			sharedSet := coordsTocircuits[c2]
+			(*sharedSet)[c1] = struct{}{}
+			coordsTocircuits[c1] = sharedSet
+		} else {
+			// merge the two pre-existing sets
+			newSharedSet := make(map[Coordinate]struct{})
+			for coord := range *coordsTocircuits[c1] {
+				newSharedSet[coord] = struct{}{}
+			}
+			for coord := range *coordsTocircuits[c2] {
+				newSharedSet[coord] = struct{}{}
+			}
+			*coordsTocircuits[c1] = newSharedSet
+			*coordsTocircuits[c2] = newSharedSet
+		}
+	}
+
+	// initialize circuit list and sort by list length
 	seen := make(map[*map[Coordinate]struct{}]struct{})
 	for _, circuit := range coordsTocircuits {
 		if _, ok := seen[circuit]; !ok {
 			seen[circuit] = struct{}{}
 		}
 	}
-
-	var circuits [][]Coordinate
+	circuits := [][]Coordinate{}
 	for circuit := range seen {
-		circuitSlice := make([]Coordinate, 0, len(*circuit))
+		circuitSlice := []Coordinate{}
 		for coord := range *circuit {
 			circuitSlice = append(circuitSlice, coord)
 		}
 		circuits = append(circuits, circuitSlice)
 	}
-
 	sort.Slice(circuits, func(i, j int) bool {
 		return len(circuits[i]) > len(circuits[j])
 	})
+
+	fmt.Printf("number of circuits: %d\n", len(circuits))
+	fmt.Println("Expecting: 11")
+
 	for _, circuit := range circuits {
-		fmt.Println(len(circuit))
+		fmt.Println(circuit)
 	}
 
-	result := 0
-	result = len(circuits[0]) * len(circuits[1]) * len(circuits[2])
-
-	return result
+	return 0
 }
 
 // d = sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)
