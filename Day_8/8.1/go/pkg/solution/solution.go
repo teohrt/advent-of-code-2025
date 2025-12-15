@@ -47,7 +47,7 @@ func Solve(filePath string) int {
 		coords = append(coords, coordinate)
 	}
 
-	coordsTocircuits := make(map[Coordinate]*[]Coordinate)
+	coordsTocircuits := make(map[Coordinate]*map[Coordinate]struct{})
 
 	for i := 0; i < len(coords); i++ {
 		ci := coords[i]
@@ -66,28 +66,31 @@ func Solve(filePath string) int {
 		}
 		cj := coords[closestIdx]
 
-		fmt.Printf("distance: %f\n", closestDistance)
 		fmt.Printf("ci: %v\n", ci)
 		fmt.Printf("cj: %v\n", cj)
 
 		// join the two circuits
-		var newSharedSlice []Coordinate
+		newSharedSet := make(map[Coordinate]struct{})
 		if coordsTocircuits[ci] != nil {
-			newSharedSlice = append(newSharedSlice, *coordsTocircuits[ci]...)
+			for coord := range *coordsTocircuits[ci] {
+				newSharedSet[coord] = struct{}{}
+			}
 		} else {
-			newSharedSlice = append(newSharedSlice, ci)
+			newSharedSet[ci] = struct{}{}
 		}
 		if coordsTocircuits[cj] != nil {
-			newSharedSlice = append(newSharedSlice, *coordsTocircuits[cj]...)
+			for coord := range *coordsTocircuits[cj] {
+				newSharedSet[coord] = struct{}{}
+			}
 		} else {
-			newSharedSlice = append(newSharedSlice, cj)
+			newSharedSet[cj] = struct{}{}
 		}
-		fmt.Printf("newSharedSlice: %v\n", newSharedSlice)
-		coordsTocircuits[ci] = &newSharedSlice
-		coordsTocircuits[cj] = &newSharedSlice
+		fmt.Printf("newSharedSet: %v\n", newSharedSet)
+		coordsTocircuits[ci] = &newSharedSet
+		coordsTocircuits[cj] = &newSharedSet
 	}
 
-	seen := make(map[*[]Coordinate]struct{})
+	seen := make(map[*map[Coordinate]struct{}]struct{})
 	for _, circuit := range coordsTocircuits {
 		if _, ok := seen[circuit]; !ok {
 			seen[circuit] = struct{}{}
@@ -96,7 +99,11 @@ func Solve(filePath string) int {
 
 	var circuits [][]Coordinate
 	for circuit := range seen {
-		circuits = append(circuits, *circuit)
+		circuitSlice := make([]Coordinate, 0, len(*circuit))
+		for coord := range *circuit {
+			circuitSlice = append(circuitSlice, coord)
+		}
+		circuits = append(circuits, circuitSlice)
 	}
 
 	sort.Slice(circuits, func(i, j int) bool {
