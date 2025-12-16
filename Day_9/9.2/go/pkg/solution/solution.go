@@ -1,6 +1,7 @@
 package solution
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"solution/pkg/lineIterator"
@@ -8,6 +9,20 @@ import (
 	"strconv"
 	"strings"
 )
+
+/*
+https://www.reddit.com/r/adventofcode/comments/1pichj2/comment/nt5guy3
+
+ 1. compress 2d points so you can grid represent in array. this is an awesome trick and i am super happy to have in my toolbag now. Search "compress 2d coordinates", YouTube videos helped me understand it. Basically, create a map of each sorted unique value for x values, and one for y sorted unique values. So lowest x=1, second lowest =2, etc. Then create a new list of points using the mapped values for x and y. Then you have a lossless compressed representation, with size of grid < number of points instead of size of grid being highest x/y values. So cool
+
+2. rasterize the polygon (fill in the edges). This is pretty easy cause we know point1 is connected to point2, etc. don't forget last point is connected to first point.
+
+3. use raycast point in polygon to find a single inside point. You need to be careful implementing this as the grid representation has non zero width boundy. Find first ".", if there are an odd number of ".#" or "#." transitions, that point is inside.
+
+4. Flood fill polygon using the found inside point as starting. Dfs works great
+
+5. Take your part one, but only calculate areas where the rectangle describe by the two corners have all borders as inside the polygon. Easy cause it's been filled!
+*/
 
 type Coordinate struct {
 	x int
@@ -40,22 +55,73 @@ func Solve(filePath string) int {
 		coords = append(coords, coordinate)
 	}
 
-	// generate all coordinate combinations
-	coordinateCombinations := [][]Coordinate{}
-	for i := 0; i < len(coords); i++ {
-		for j := i + 1; j < len(coords); j++ {
-			coordinateCombinations = append(coordinateCombinations, []Coordinate{coords[i], coords[j]})
+	// Step 1: Compress 2D coordinates 🤯
+	// Get unique x and y values
+	xSet := make(map[int]bool)
+	ySet := make(map[int]bool)
+	for _, coord := range coords {
+		xSet[coord.x] = true
+		ySet[coord.y] = true
+	}
+
+	// Convert to slices and sort
+	xs := make([]int, 0, len(xSet))
+	for x := range xSet {
+		xs = append(xs, x)
+	}
+	sort.Ints(xs)
+
+	ys := make([]int, 0, len(ySet))
+	for y := range ySet {
+		ys = append(ys, y)
+	}
+	sort.Ints(ys)
+
+	// Create maps from original values to compressed indices
+	xMap := make(map[int]int)
+	for i, x := range xs {
+		xMap[x] = i
+	}
+
+	yMap := make(map[int]int)
+	for i, y := range ys {
+		yMap[y] = i
+	}
+
+	// Compressed red tiles
+	compressedRed := make([]Coordinate, len(coords))
+	for i, coord := range coords {
+		compressedRed[i] = Coordinate{
+			x: xMap[coord.x],
+			y: yMap[coord.y],
 		}
 	}
 
-	// sort the coordinate combinations by area, largest first
-	sort.Slice(coordinateCombinations, func(i, j int) bool {
-		return getRectangleArea(coordinateCombinations[i][0], coordinateCombinations[i][1]) > getRectangleArea(coordinateCombinations[j][0], coordinateCombinations[j][1])
-	})
+	// Create grid
+	width := len(xs)
+	height := len(ys)
+	grid := make([][]rune, height)
+	for i := range grid {
+		grid[i] = make([]rune, width)
+		for j := range grid[i] {
+			grid[i][j] = '.'
+		}
+	}
 
-	// return the area of the largest rectangle
-	largestRectangle := coordinateCombinations[0]
-	return getRectangleArea(largestRectangle[0], largestRectangle[1])
+	// Mark red tiles in the grid
+	for _, coord := range compressedRed {
+		grid[coord.y][coord.x] = '#'
+	}
+
+	// Print grid
+	for _, row := range grid {
+		for _, cell := range row {
+			fmt.Print(string(cell))
+		}
+		fmt.Println()
+	}
+
+	return 0
 }
 
 // The two coordinates are the opposite corners of the rectangle
