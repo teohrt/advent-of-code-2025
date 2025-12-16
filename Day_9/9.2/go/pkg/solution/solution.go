@@ -113,7 +113,7 @@ func Solve(filePath string) int {
 		grid[coord.y][coord.x] = '#'
 	}
 
-	// Step 2:"Rasterize" the polygon (fill in the edges)
+	// Step 2: "Rasterize" the polygon (fill in the edges)
 	rasterize(grid, compressedRed)
 
 	// Step 3: Find an inside point using raycast
@@ -122,9 +122,58 @@ func Solve(filePath string) int {
 	// Step 4: DFS flood fill from the inside point
 	floodFill(grid, insidePoint, width, height)
 
-	printGrid(grid)
+	// Step 5: Find the largest rectangle with red corners where the perimeter is inside polygon
+	largestArea := findLargestAreaWithinPolygon(grid, coords, xMap, yMap)
 
-	return 0
+	printGrid(grid)
+	return largestArea
+}
+
+func findLargestAreaWithinPolygon(grid [][]rune, inputCoords []Coordinate, xMap map[int]int, yMap map[int]int) int {
+	largestArea := 0
+	for i, inputCoord1 := range inputCoords {
+		cx1, cy1 := xMap[inputCoord1.x], yMap[inputCoord1.y]
+		for _, inputCoord2 := range inputCoords[i+1:] {
+			cx2, cy2 := xMap[inputCoord2.x], yMap[inputCoord2.y]
+
+			// Calculate actual area, not the compressed area
+			area := getRectangleArea(inputCoord1, inputCoord2)
+			// Skip the rectangle rest if it's not a contender
+			if area <= largestArea {
+				continue
+			}
+
+			// Check if the perimeter is inside the polygon
+			minCx := min(cx1, cx2)
+			maxCx := max(cx1, cx2)
+			minCy := min(cy1, cy2)
+			maxCy := max(cy1, cy2)
+			enclosed := true
+
+			// Check top and bottom edges
+			for cx := minCx; cx <= maxCx; cx++ {
+				if grid[minCy][cx] == '.' || grid[maxCy][cx] == '.' {
+					enclosed = false
+					break
+				}
+			}
+
+			// Check left and right edges
+			if enclosed {
+				for cy := minCy; cy <= maxCy; cy++ {
+					if grid[cy][minCx] == '.' || grid[cy][maxCx] == '.' {
+						enclosed = false
+						break
+					}
+				}
+			}
+
+			if enclosed {
+				largestArea = area
+			}
+		}
+	}
+	return largestArea
 }
 
 func rasterize(grid [][]rune, compressedRed []Coordinate) {
@@ -189,15 +238,6 @@ func getInsidePointFromRaycast(grid [][]rune, width int, height int) Coordinate 
 	return insidePoint
 }
 
-func printGrid(grid [][]rune) {
-	for _, row := range grid {
-		for _, cell := range row {
-			fmt.Print(string(cell))
-		}
-		fmt.Println()
-	}
-}
-
 func floodFill(grid [][]rune, insidePoint Coordinate, width int, height int) {
 	stack := []Coordinate{insidePoint}
 	for len(stack) > 0 {
@@ -221,4 +261,13 @@ func getRectangleArea(coord1 Coordinate, coord2 Coordinate) int {
 	width := math.Abs(float64(coord2.x-coord1.x)) + 1
 	height := math.Abs(float64(coord2.y-coord1.y)) + 1
 	return int(width * height)
+}
+
+func printGrid(grid [][]rune) {
+	for _, row := range grid {
+		for _, cell := range row {
+			fmt.Print(string(cell))
+		}
+		fmt.Println()
+	}
 }
