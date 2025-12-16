@@ -163,7 +163,22 @@ func Solve(filePath string) int {
 		}
 	}
 
-	grid[insidePoint.y][insidePoint.x] = '0'
+	// Step 4: DFS flood fill from the inside point
+	stack := []Coordinate{insidePoint}
+	for len(stack) > 0 {
+		var popped Coordinate
+		popped, stack = stack[0], stack[1:]
+		isInGrid := 0 <= popped.x && popped.x < width && 0 <= popped.y && popped.y < height
+		shouldFill := isInGrid && grid[popped.y][popped.x] == '.'
+		if shouldFill {
+			grid[popped.y][popped.x] = '0'
+			up := Coordinate{popped.x, popped.y - 1}
+			down := Coordinate{popped.x, popped.y + 1}
+			left := Coordinate{popped.x - 1, popped.y}
+			right := Coordinate{popped.x + 1, popped.y}
+			stack = append(stack, up, down, left, right)
+		}
+	}
 
 	// Print grid
 	for _, row := range grid {
@@ -172,7 +187,6 @@ func Solve(filePath string) int {
 		}
 		fmt.Println()
 	}
-	fmt.Printf("insidePoint: %+v\n", insidePoint)
 
 	return 0
 }
