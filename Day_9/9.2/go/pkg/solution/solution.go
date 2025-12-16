@@ -113,6 +113,27 @@ func Solve(filePath string) int {
 		grid[coord.y][coord.x] = '#'
 	}
 
+	// "Rasterize" the polygon (fill in the edges)
+	// This only works because of the input order, which is guaranteed to be a closed polygon.
+	for i, c1 := range compressedRed {
+		c2 := compressedRed[(i+1)%len(compressedRed)]
+		// wraps to 0 when i+1 equals the length.
+		// This connects each point to the next, and the last point to the first
+		if c1.x == c2.x { // vertical line
+			yMin := min(c1.y, c2.y)
+			yMax := max(c1.y, c2.y)
+			for y := yMin; y <= yMax; y++ {
+				grid[y][c1.x] = 'X'
+			}
+		} else if c1.y == c2.y { // horizontal line
+			xMin := min(c1.x, c2.x)
+			xMax := max(c1.x, c2.x)
+			for x := xMin; x <= xMax; x++ {
+				grid[c1.y][x] = 'X'
+			}
+		}
+	}
+
 	// Print grid
 	for _, row := range grid {
 		for _, cell := range row {
