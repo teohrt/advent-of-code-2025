@@ -134,6 +134,37 @@ func Solve(filePath string) int {
 		}
 	}
 
+	// Step 3: Find an inside point using raycast
+	insidePoint := Coordinate{-1, -1}
+	for y := range height {
+		for x := range width {
+			if grid[y][x] != '.' {
+				continue
+			}
+			// Count transitions from this point to the left
+			transitions := 0
+			prev := '.'
+			for i := x - 1; i >= 0; i-- {
+				curr := grid[y][i]
+				if curr != prev {
+					transitions++
+				}
+				prev = curr
+			}
+
+			// Odd number of transitions means inside
+			if transitions%2 == 1 {
+				insidePoint = Coordinate{x, y}
+				break
+			}
+		}
+		if insidePoint.x != -1 {
+			break
+		}
+	}
+
+	grid[insidePoint.y][insidePoint.x] = '0'
+
 	// Print grid
 	for _, row := range grid {
 		for _, cell := range row {
@@ -141,6 +172,7 @@ func Solve(filePath string) int {
 		}
 		fmt.Println()
 	}
+	fmt.Printf("insidePoint: %+v\n", insidePoint)
 
 	return 0
 }
