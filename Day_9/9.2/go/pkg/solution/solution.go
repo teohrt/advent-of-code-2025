@@ -13,7 +13,7 @@ import (
 /*
 https://www.reddit.com/r/adventofcode/comments/1pichj2/comment/nt5guy3
 
- 1. compress 2d points so you can grid represent in array. this is an awesome trick and i am super happy to have in my toolbag now. Search "compress 2d coordinates", YouTube videos helped me understand it. Basically, create a map of each sorted unique value for x values, and one for y sorted unique values. So lowest x=1, second lowest =2, etc. Then create a new list of points using the mapped values for x and y. Then you have a lossless compressed representation, with size of grid < number of points instead of size of grid being highest x/y values. So cool
+1. compress 2d points so you can grid represent in array. this is an awesome trick and i am super happy to have in my toolbag now. Search "compress 2d coordinates", YouTube videos helped me understand it. Basically, create a map of each sorted unique value for x values, and one for y sorted unique values. So lowest x=1, second lowest =2, etc. Then create a new list of points using the mapped values for x and y. Then you have a lossless compressed representation, with size of grid < number of points instead of size of grid being highest x/y values. So cool
 
 2. rasterize the polygon (fill in the edges). This is pretty easy cause we know point1 is connected to point2, etc. don't forget last point is connected to first point.
 
@@ -21,7 +21,7 @@ https://www.reddit.com/r/adventofcode/comments/1pichj2/comment/nt5guy3
 
 4. Flood fill polygon using the found inside point as starting. Dfs works great
 
-5. Take your part one, but only calculate areas where the rectangle describe by the two corners have all borders as inside the polygon. Easy cause it's been filled!
+5. Calculate areas where the rectangle describe by the two corners have all borders as inside the polygon. Easy cause it's been filled!
 */
 
 type Coordinate struct {
@@ -113,12 +113,29 @@ func Solve(filePath string) int {
 		grid[coord.y][coord.x] = '#'
 	}
 
-	// "Rasterize" the polygon (fill in the edges)
-	// This only works because of the input order, which is guaranteed to be a closed polygon.
+	// Step 2:"Rasterize" the polygon (fill in the edges)
+	rasterize(grid, compressedRed)
+
+	// Step 3: Find an inside point using raycast
+	insidePoint := getInsidePointFromRaycast(grid, width, height)
+
+	// Step 4: DFS flood fill from the inside point
+	floodFill(grid, insidePoint, width, height)
+
+	printGrid(grid)
+
+	return 0
+}
+
+func rasterize(grid [][]rune, compressedRed []Coordinate) {
+	// Rasterizing - vector graphics term that basically means to convert points into lines
+	// This only works because the prompt guarentees the input to be a closed polygon
 	for i, c1 := range compressedRed {
 		c2 := compressedRed[(i+1)%len(compressedRed)]
 		// wraps to 0 when i+1 equals the length.
 		// This connects each point to the next, and the last point to the first
+		// Required because the last point in the list is connected to the first point in the list
+		//  - guarenteed by the prompt
 		if c1.x == c2.x { // vertical line
 			yMin := min(c1.y, c2.y)
 			yMax := max(c1.y, c2.y)
@@ -133,8 +150,15 @@ func Solve(filePath string) int {
 			}
 		}
 	}
+}
 
-	// Step 3: Find an inside point using raycast
+func getInsidePointFromRaycast(grid [][]rune, width int, height int) Coordinate {
+	// This is a common computer graphics algorithm called "raycasting point-in-polygon"
+	// The name was more intimidating than the implementation.
+	// For each coordinate in the graph, count the number of "transitions", i.e. changes in boundaries.
+	// If that number is odd, the point is inside the polygon.
+	// Requires that the polygon is closed and non-self-intersecting.
+	// Since this is guaranteed by the input prompt, we can use this method.
 	insidePoint := Coordinate{-1, -1}
 	for y := range height {
 		for x := range width {
@@ -162,8 +186,19 @@ func Solve(filePath string) int {
 			break
 		}
 	}
+	return insidePoint
+}
 
-	// Step 4: DFS flood fill from the inside point
+func printGrid(grid [][]rune) {
+	for _, row := range grid {
+		for _, cell := range row {
+			fmt.Print(string(cell))
+		}
+		fmt.Println()
+	}
+}
+
+func floodFill(grid [][]rune, insidePoint Coordinate, width int, height int) {
 	stack := []Coordinate{insidePoint}
 	for len(stack) > 0 {
 		var popped Coordinate
@@ -179,16 +214,6 @@ func Solve(filePath string) int {
 			stack = append(stack, up, down, left, right)
 		}
 	}
-
-	// Print grid
-	for _, row := range grid {
-		for _, cell := range row {
-			fmt.Print(string(cell))
-		}
-		fmt.Println()
-	}
-
-	return 0
 }
 
 // The two coordinates are the opposite corners of the rectangle
