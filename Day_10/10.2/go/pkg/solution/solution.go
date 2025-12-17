@@ -33,29 +33,25 @@ func Solve(filePath string) int {
 }
 
 type Item struct {
-	lightStates []bool
-	presses     int
+	presses       int
+	counterStates []int
 }
 
 // BFS to find the minimum number of presses to achieve the desired state
 func getMinPresses(machine Machine) int {
-	targetState := machine.desiredLights
-	numLights := len(targetState)
+	targetState := machine.joltage
+	numCounters := len(targetState)
 
-	// Helper to convert []bool to string for map key
-	stateToString := func(states []bool) string {
-		b := make([]byte, numLights)
+	// Helper to convert []int to string for map key
+	stateToString := func(states []int) string {
+		b := make([]byte, numCounters)
 		for i, s := range states {
-			if s {
-				b[i] = '1'
-			} else {
-				b[i] = '0'
-			}
+			b[i] = byte(s)
 		}
 		return string(b)
 	}
 
-	initialStates := make([]bool, numLights)
+	initialStates := make([]int, numCounters)
 	initialStateStr := stateToString(initialStates)
 	targetStateStr := stateToString(targetState)
 
@@ -65,8 +61,8 @@ func getMinPresses(machine Machine) int {
 
 	queue := []Item{
 		{
-			lightStates: initialStates,
-			presses:     0,
+			counterStates: initialStates,
+			presses:       0,
 		},
 	}
 
@@ -79,10 +75,22 @@ func getMinPresses(machine Machine) int {
 
 		for _, button := range machine.buttons {
 			// Create new state by toggling lights listed in the button
-			nextStates := make([]bool, numLights)
-			copy(nextStates, current.lightStates)
-			for _, lightIdx := range button {
-				nextStates[lightIdx] = !nextStates[lightIdx]
+			nextStates := make([]int, numCounters)
+			copy(nextStates, current.counterStates)
+			for _, counterIdx := range button {
+				nextStates[counterIdx] = nextStates[counterIdx] + 1
+			}
+
+			// If any counter state is greater than the target state, we can skip
+			skip := false
+			for counterIdx, counterState := range nextStates {
+				if counterState > targetState[counterIdx] {
+					skip = true
+					break
+				}
+			}
+			if skip {
+				continue
 			}
 
 			nextStateStr := stateToString(nextStates)
@@ -95,8 +103,8 @@ func getMinPresses(machine Machine) int {
 			if !visited[nextStateStr] {
 				visited[nextStateStr] = true
 				queue = append(queue, Item{
-					lightStates: nextStates,
-					presses:     current.presses + 1,
+					counterStates: nextStates,
+					presses:       current.presses + 1,
 				})
 			}
 		}
