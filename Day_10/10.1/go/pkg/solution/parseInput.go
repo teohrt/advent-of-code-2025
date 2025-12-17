@@ -8,9 +8,9 @@ import (
 )
 
 type Machine struct {
-	lights  []string
-	buttons [][]int
-	joltage []int
+	desiredLights []bool
+	buttons       [][]int
+	joltage       []int
 }
 
 func parseInput(filePath string) []Machine {
@@ -37,7 +37,15 @@ func parseMachine(line string) Machine {
 	lightsEnd := strings.Index(line, "]")
 	if lightsStart != -1 && lightsEnd != -1 {
 		lightsStr := line[lightsStart+1 : lightsEnd]
-		machine.lights = strings.Split(lightsStr, "")
+		lights := strings.Split(lightsStr, "")
+		machine.desiredLights = []bool{}
+		for _, light := range lights {
+			if light == "." {
+				machine.desiredLights = append(machine.desiredLights, false)
+			} else {
+				machine.desiredLights = append(machine.desiredLights, true)
+			}
+		}
 	}
 
 	// Parse buttons (3) (1,3) (2)...
