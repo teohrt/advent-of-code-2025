@@ -1,6 +1,7 @@
 package solution
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -58,16 +59,17 @@ func Solve(filePath string) int {
 	machines := parseInput(filePath)
 
 	result := 0
-	for _, machine := range machines {
+	for i, machine := range machines {
 		result += getMinPresses(machine)
+		fmt.Printf("machine %d, min presses: %d\n", i, getMinPresses(machine))
 	}
 
 	return result
 }
 
 type Item struct {
-	lightStates []bool
-	pressCount  int
+	lightStates     []bool
+	previousButtons map[string]struct{}
 }
 
 func getMinPresses(machine Machine) int {
@@ -81,8 +83,8 @@ func getMinPresses(machine Machine) int {
 	minPresses := int(float64(math.Inf(1)))
 	stack := []Item{
 		{
-			lightStates: make([]bool, len(machine.desiredLights)), // initially all lights are off
-			pressCount:  0,
+			lightStates:     make([]bool, len(machine.desiredLights)), // initially all lights are off
+			previousButtons: make(map[string]struct{}),
 		},
 	}
 	for len(stack) > 0 {
@@ -91,7 +93,7 @@ func getMinPresses(machine Machine) int {
 
 		// if the number of presses is greater than the minimum, skip further processing and continue
 		// this is a pruning optimization - if we've already found a better solution, we don't need to continue
-		if popped.pressCount > minPresses {
+		if len(popped.previousButtons) >= minPresses {
 			continue
 		}
 
@@ -105,22 +107,32 @@ func getMinPresses(machine Machine) int {
 		}
 		foundDesiredState := len(lightsToFlip) == 0
 		if foundDesiredState {
-			minPresses = popped.pressCount
+			minPresses = len(popped.previousButtons)
 			continue
 		}
 
 		// push new states onto the stack
 		for _, idxToFlip := range lightsToFlip {
 			for _, button := range buttonMap[idxToFlip] {
+				// If we've already pressed this button, skip
+				buttonString := fmt.Sprintf("%d", button)
+				if _, ok := popped.previousButtons[buttonString]; ok {
+					continue
+				}
 				// "Press the button" & update the light states associated
 				newLightStates := make([]bool, len(popped.lightStates))
 				copy(newLightStates, popped.lightStates)
 				for _, lightIdx := range button {
 					newLightStates[lightIdx] = !newLightStates[lightIdx]
 				}
+				newPreviousButtons := make(map[string]struct{})
+				for k, v := range popped.previousButtons {
+					newPreviousButtons[k] = v
+				}
+				newPreviousButtons[buttonString] = struct{}{}
 				item := Item{
-					lightStates: newLightStates,
-					pressCount:  popped.pressCount + 1,
+					lightStates:     newLightStates,
+					previousButtons: newPreviousButtons,
 				}
 				stack = append(stack, item)
 			}
